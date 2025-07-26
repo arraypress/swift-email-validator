@@ -41,15 +41,8 @@ public extension String {
     /// // Result: "User@example.com"
     /// ```
     var normalizedEmail: String? {
-        guard EmailValidator.isValid(self) else { return nil }
-        
-        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
-        let parts = trimmed.split(separator: "@", maxSplits: 1)
-        guard parts.count == 2 else { return nil }
-        
-        let local = String(parts[0])
-        let domain = String(parts[1]).lowercased()
-        
+        guard let local = emailLocalPart,
+              let domain = emailDomain else { return nil }
         return "\(local)@\(domain)"
     }
     
@@ -333,4 +326,5 @@ internal struct EmailValidator {
             }
         }
     }
+    
 }
