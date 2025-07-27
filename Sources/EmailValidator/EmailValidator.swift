@@ -96,40 +96,107 @@ public extension String {
         guard let domain = emailDomain else { return nil }
         
         let providerMap: [String: String] = [
-            // Google
+            // Google (only gmail.com and googlemail.com are valid for actual emails)
             "gmail.com": "Gmail",
             "googlemail.com": "Gmail",
             
-            // Microsoft
+            // Microsoft (has extensive regional variants)
             "outlook.com": "Outlook",
+            "outlook.co.uk": "Outlook",
+            "outlook.de": "Outlook",
+            "outlook.fr": "Outlook",
+            "outlook.it": "Outlook",
+            "outlook.es": "Outlook",
+            "outlook.com.au": "Outlook",
+            "outlook.ca": "Outlook",
+            "outlook.be": "Outlook",
+            "outlook.com.ar": "Outlook",
+            "outlook.com.br": "Outlook",
+            "outlook.co.in": "Outlook",
+            "outlook.co.jp": "Outlook",
+            
             "hotmail.com": "Outlook",
+            "hotmail.co.uk": "Outlook",
+            "hotmail.de": "Outlook",
+            "hotmail.fr": "Outlook",
+            "hotmail.it": "Outlook",
+            "hotmail.es": "Outlook",
+            "hotmail.com.au": "Outlook",
+            "hotmail.ca": "Outlook",
+            "hotmail.com.br": "Outlook",
+            "hotmail.co.jp": "Outlook",
+            
             "live.com": "Outlook",
+            "live.co.uk": "Outlook",
+            "live.de": "Outlook",
+            "live.fr": "Outlook",
+            "live.it": "Outlook",
+            "live.ca": "Outlook",
+            "live.com.au": "Outlook",
+            
             "msn.com": "Outlook",
             
-            // Yahoo
+            // Yahoo (extensive international presence)
             "yahoo.com": "Yahoo",
             "yahoo.co.uk": "Yahoo",
             "yahoo.ca": "Yahoo",
             "yahoo.de": "Yahoo",
             "yahoo.fr": "Yahoo",
+            "yahoo.it": "Yahoo",
+            "yahoo.es": "Yahoo",
             "yahoo.com.au": "Yahoo",
+            "yahoo.co.jp": "Yahoo",
+            "yahoo.com.br": "Yahoo",
+            "yahoo.co.in": "Yahoo",
+            "yahoo.com.mx": "Yahoo",
             
             // Apple
             "icloud.com": "iCloud",
             "me.com": "iCloud",
             "mac.com": "iCloud",
             
-            // Other providers
+            // AOL (has some regional variants)
             "aol.com": "AOL",
+            "aol.co.uk": "AOL",
+            "aol.de": "AOL",
+            "aol.fr": "AOL",
+            
+            // Privacy-focused
             "protonmail.com": "ProtonMail",
+            "proton.me": "ProtonMail",
             "tutanota.com": "Tutanota",
+            "tutanota.de": "Tutanota",
+            "hey.com": "Hey",
+            
+            // Russian
             "yandex.com": "Yandex",
+            "yandex.ru": "Yandex",
             "mail.ru": "Mail.Ru",
             
-            // Asian providers
+            // German providers
+            "gmx.de": "GMX",
+            "gmx.com": "GMX",
+            "gmx.net": "GMX",
+            "web.de": "Web.de",
+            
+            // French providers
+            "orange.fr": "Orange",
+            "wanadoo.fr": "Orange",
+            "free.fr": "Free",
+            "laposte.net": "La Poste",
+            
+            // Korean providers
+            "naver.com": "Naver",
+            "daum.net": "Daum",
+            
+            // Chinese providers
             "163.com": "NetEase",
             "126.com": "NetEase",
-            "qq.com": "QQ Mail"
+            "qq.com": "QQ Mail",
+            
+            // Business-oriented but common
+            "zoho.com": "Zoho",
+            "zoho.eu": "Zoho"
         ]
         
         return providerMap[domain]
@@ -180,6 +247,64 @@ public extension Array where Element == String {
     var normalizedEmails: [String] {
         return compactMap { $0.normalizedEmail }
     }
+    
+    /// Get valid emails if any exist, nil otherwise.
+    ///
+    /// Returns an array of valid email addresses, or nil if no valid emails
+    /// are found. This is useful when you want to avoid checking isEmpty
+    /// and prefer optional handling.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let emails = ["valid@example.com", "invalid", "another@test.org"]
+    /// if let validEmails = emails.validEmailsIfAny {
+    ///     print("Found \(validEmails.count) valid emails")
+    /// } else {
+    ///     print("No valid emails found")
+    /// }
+    /// ```
+    var validEmailsIfAny: [String]? {
+        let valid = validEmails
+        return valid.isEmpty ? nil : valid
+    }
+    
+    /// Get normalized emails if any exist, nil otherwise.
+    ///
+    /// Returns an array of normalized email addresses, or nil if no valid emails
+    /// are found. Combines validation and normalization with optional handling.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let emails = ["User@EXAMPLE.COM", "invalid", "test@DOMAIN.ORG"]
+    /// if let normalized = emails.normalizedEmailsIfAny {
+    ///     print("Normalized emails: \(normalized)")
+    ///     // Result: ["User@example.com", "test@domain.org"]
+    /// } else {
+    ///     print("No valid emails to normalize")
+    /// }
+    /// ```
+    var normalizedEmailsIfAny: [String]? {
+        let normalized = normalizedEmails
+        return normalized.isEmpty ? nil : normalized
+    }
+    
+    /// Check if the collection contains any valid emails.
+    ///
+    /// Returns true if at least one email in the collection is valid,
+    /// false otherwise. More readable than checking validEmailCount > 0.
+    ///
+    /// ## Example
+    /// ```swift
+    /// let emails = ["valid@example.com", "invalid", "another@test.org"]
+    /// if emails.hasValidEmails {
+    ///     print("Processing valid emails...")
+    ///     processEmails(emails.validEmails)
+    /// }
+    /// ```
+    var hasValidEmails: Bool {
+        return contains { $0.isEmail }
+    }
+    
 }
 
 // MARK: - Collection Extensions

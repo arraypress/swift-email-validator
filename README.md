@@ -121,6 +121,42 @@ let emails = ["User@EXAMPLE.COM", "invalid", "test@DOMAIN.ORG"]
 emails.normalizedEmails // ["User@example.com", "test@domain.org"]
 ```
 
+#### `validEmailsIfAny: [String]?`
+Get valid emails if any exist, nil otherwise.
+
+```swift
+let emails = ["valid@example.com", "invalid", "another@test.org"]
+if let validEmails = emails.validEmailsIfAny {
+    print("Found \(validEmails.count) valid emails")
+} else {
+    print("No valid emails found")
+}
+```
+
+#### `normalizedEmailsIfAny: [String]?`
+Get normalized emails if any exist, nil otherwise.
+
+```swift
+let emails = ["User@EXAMPLE.COM", "invalid", "test@DOMAIN.ORG"]
+if let normalized = emails.normalizedEmailsIfAny {
+    print("Normalized emails: \(normalized)")
+    // Result: ["User@example.com", "test@domain.org"]
+} else {
+    print("No valid emails to normalize")
+}
+```
+
+#### `hasValidEmails: Bool`
+Check if the collection contains any valid emails.
+
+```swift
+let emails = ["valid@example.com", "invalid", "another@test.org"]
+if emails.hasValidEmails {
+    print("Processing valid emails...")
+    processEmails(emails.validEmails)
+}
+```
+
 ### Collection Extensions
 
 #### `validEmailCount: Int`
@@ -135,27 +171,42 @@ Counts valid email addresses in the collection.
 EmailValidator recognizes these major providers:
 
 ### Google
-- Gmail (gmail.com, googlemail.com, gmail.co.uk)
+- Gmail (gmail.com, googlemail.com)
 
 ### Microsoft
-- Outlook (outlook.com, hotmail.com, live.com, msn.com)
+- Outlook (outlook.com + regional variants, hotmail.com + regional variants, live.com + regional variants, msn.com)
 
 ### Yahoo
-- Yahoo (yahoo.com, yahoo.co.uk, yahoo.ca, yahoo.de, yahoo.fr, yahoo.com.au)
+- Yahoo (yahoo.com, yahoo.co.uk, yahoo.ca, yahoo.de, yahoo.fr, yahoo.com.au, and more)
 
 ### Apple
 - iCloud (icloud.com, me.com, mac.com)
 
+### Privacy-Focused
+- ProtonMail (protonmail.com, proton.me)
+- Tutanota (tutanota.com, tutanota.de)
+- Hey (hey.com)
+
 ### Other Major Providers
-- AOL (aol.com)
-- ProtonMail (protonmail.com)
-- Tutanota (tutanota.com)
-- Yandex (yandex.com)
+- AOL (aol.com + regional variants)
+- Yandex (yandex.com, yandex.ru)
 - Mail.Ru (mail.ru)
+
+### European Providers
+- GMX (gmx.de, gmx.com, gmx.net)
+- Web.de (web.de)
+- Orange (orange.fr, wanadoo.fr)
+- Free (free.fr)
+- La Poste (laposte.net)
 
 ### Asian Providers
 - NetEase (163.com, 126.com)
 - QQ Mail (qq.com)
+- Naver (naver.com)
+- Daum (daum.net)
+
+### Business-Oriented
+- Zoho (zoho.com, zoho.eu)
 
 ## Examples
 
@@ -225,6 +276,29 @@ func analyzeEmailSignups(_ emails: [String]) {
     let grouped = Dictionary(grouping: validEmails) { $0.emailProvider ?? "Other" }
     for (provider, emails) in grouped {
         print("\(provider): \(emails.count) emails")
+    }
+}
+```
+
+### Optional Handling
+
+```swift
+func processEmails(_ emails: [String]) {
+    // Use optional variants for cleaner code
+    if let validEmails = emails.validEmailsIfAny {
+        print("Processing \(validEmails.count) valid emails")
+        
+        if let normalized = emails.normalizedEmailsIfAny {
+            // Work with normalized emails
+            sendBulkEmail(to: normalized)
+        }
+    } else {
+        print("No valid emails to process")
+    }
+    
+    // Or use boolean check
+    if emails.hasValidEmails {
+        print("Found valid emails, proceeding...")
     }
 }
 ```
