@@ -1,361 +1,119 @@
 # Swift Email Validator
 
-A simple, robust email validation library for Swift, inspired by WordPress's battle-tested validation logic. Designed to be lightweight, fast, and RFC-compliant while providing convenient Swift-native APIs.
+A lightweight Swift library for validating, normalizing, and inspecting email addresses. Built on WordPress-inspired, RFC 5321/5322-aware validation logic, it exposes a clean set of `String`, `Array`, and `Collection` extensions so you can check, filter, and analyze emails with natural, expressive syntax.
 
 ## Features
 
-- ✅ **RFC 5321/5322 compliant** validation
-- ✅ **WordPress-inspired** logic (handles billions of emails)
-- ✅ **Zero dependencies** - pure Swift
-- ✅ **Comprehensive provider detection** - recognizes major email providers
-- ✅ **Swift-native APIs** - feels natural in Swift code
-- ✅ **High performance** - optimized for speed
-- ✅ **Extensive test coverage** - 20+ test cases covering edge cases
+- 🎯 **RFC-aware validation** — Enforces length limits, local/domain rules, subdomain checks, and TLD constraints for accurate results.
+- ✅ **Simple boolean checks** — `"user@example.com".isEmail` returns a plain `Bool` with no setup required.
+- 🔤 **Email normalization** — Lowercases the domain while preserving the local part's original case per RFC standards.
+- ✂️ **Component extraction** — Pull out the local part and domain from any valid address.
+- 🏷️ **Provider detection** — Identify 90+ consumer providers (Gmail, Outlook, Yahoo, iCloud, ProtonMail, and more) from the domain.
+- 👤 **Personal vs. business** — Distinguish recognized personal email providers from custom/business domains.
+- 📚 **Array filtering** — `validEmails`, `normalizedEmails`, and their `…IfAny` optional variants for batch handling.
+- 🔢 **Collection counting** — `validEmailCount` and `hasValidEmails` for quick aggregate checks.
+- 🧱 **Zero dependencies** — Pure Foundation, no third-party packages.
+- ⚡ **Lightweight & fast** — Lazy filtering and minimal allocations for large collections.
+
+## Requirements
+
+- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
+- Swift 6.1+
+- Xcode 16.0+
 
 ## Installation
 
 ### Swift Package Manager
 
-Add EmailValidator to your project using Xcode:
-
-1. File → Add Package Dependencies
-2. Enter: `https://github.com/arraypress/swift-email-validator`
-3. Select your desired version
-
-Or add to your `Package.swift`:
-
 ```swift
 dependencies: [
-    .package(url: "https://github.com/arraypress/swift-email-validator", from: "1.0.0")
+    .package(url: "https://github.com/arraypress/swift-email-validator.git", from: "1.0.0")
 ]
 ```
 
-## Quick Start
+## Usage
+
+### Validating a single email
 
 ```swift
 import EmailValidator
 
-// Basic validation
-"user@example.com".isEmail // true
-"invalid-email".isEmail    // false
-
-// Get normalized email (lowercased domain)
-"User@EXAMPLE.COM".normalizedEmail // "User@example.com"
-
-// Parse email components
-"user@example.com".emailLocalPart // "user"
-"user@example.com".emailDomain    // "example.com"
-
-// Provider detection
-"user@gmail.com".emailProvider          // "Gmail"
-"user@gmail.com".isPersonalEmailProvider // true
-"user@company.com".isPersonalEmailProvider // false
-```
-
-## Core APIs
-
-### String Extensions
-
-#### `isEmail: Bool`
-Validates if the string is a properly formatted email address.
-
-```swift
-"test@example.com".isEmail  // true
-"invalid".isEmail           // false
-```
-
-#### `normalizedEmail: String?`
-Returns a normalized version with lowercased domain, or nil if invalid.
-
-```swift
-"User@EXAMPLE.COM".normalizedEmail // "User@example.com"
-"invalid".normalizedEmail          // nil
-```
-
-#### `emailLocalPart: String?`
-Extracts the username portion (before @).
-
-```swift
-"user.name@example.com".emailLocalPart // "user.name"
-```
-
-#### `emailDomain: String?`
-Extracts the domain portion (after @).
-
-```swift
-"user@sub.example.com".emailDomain // "sub.example.com"
-```
-
-#### `emailProvider: String?`
-Detects known email providers.
-
-```swift
-"user@gmail.com".emailProvider    // "Gmail"
-"user@yahoo.com".emailProvider    // "Yahoo"
-"user@company.com".emailProvider  // nil
-```
-
-#### `isPersonalEmailProvider: Bool`
-Checks if the email is from a recognized personal email provider.
-
-```swift
-"user@gmail.com".isPersonalEmailProvider    // true
-"user@company.com".isPersonalEmailProvider  // false
-```
-
-### Array Extensions
-
-#### `validEmails: [String]`
-Filters array to only valid email addresses.
-
-```swift
-let emails = ["valid@example.com", "invalid", "another@test.org"]
-emails.validEmails // ["valid@example.com", "another@test.org"]
-```
-
-#### `normalizedEmails: [String]`
-Returns normalized versions of all valid emails.
-
-```swift
-let emails = ["User@EXAMPLE.COM", "invalid", "test@DOMAIN.ORG"]
-emails.normalizedEmails // ["User@example.com", "test@domain.org"]
-```
-
-#### `validEmailsIfAny: [String]?`
-Get valid emails if any exist, nil otherwise.
-
-```swift
-let emails = ["valid@example.com", "invalid", "another@test.org"]
-if let validEmails = emails.validEmailsIfAny {
-    print("Found \(validEmails.count) valid emails")
-} else {
-    print("No valid emails found")
+if "user@example.com".isEmail {
+    print("Valid email!")
 }
+
+"invalid".isEmail        // false
+"a@b.co".isEmail         // true
 ```
 
-#### `normalizedEmailsIfAny: [String]?`
-Get normalized emails if any exist, nil otherwise.
+### Normalizing and extracting components
 
 ```swift
+import EmailValidator
+
+let normalized = "User@EXAMPLE.COM".normalizedEmail
+// "User@example.com" (domain lowercased, local part preserved)
+
+"user.name@example.com".emailLocalPart   // "user.name"
+"user@sub.example.com".emailDomain       // "sub.example.com"
+```
+
+### Detecting providers
+
+```swift
+import EmailValidator
+
+"user@gmail.com".emailProvider           // "Gmail"
+"user@outlook.com".emailProvider         // "Outlook"
+"user@company.com".emailProvider         // nil
+
+"user@gmail.com".isPersonalEmailProvider     // true
+"support@startup.io".isPersonalEmailProvider // false
+```
+
+### Working with arrays and collections
+
+```swift
+import EmailValidator
+
 let emails = ["User@EXAMPLE.COM", "invalid", "test@DOMAIN.ORG"]
+
+emails.validEmails        // ["User@EXAMPLE.COM", "test@DOMAIN.ORG"]
+emails.normalizedEmails   // ["User@example.com", "test@domain.org"]
+emails.validEmailCount    // 2
+emails.hasValidEmails     // true
+
+// Optional variants return nil instead of an empty array
+if let valid = emails.validEmailsIfAny {
+    print("Found \(valid.count) valid emails")
+}
+
 if let normalized = emails.normalizedEmailsIfAny {
-    print("Normalized emails: \(normalized)")
-    // Result: ["User@example.com", "test@domain.org"]
-} else {
-    print("No valid emails to normalize")
+    print(normalized)
 }
 ```
 
-#### `hasValidEmails: Bool`
-Check if the collection contains any valid emails.
+## How It Works
 
-```swift
-let emails = ["valid@example.com", "invalid", "another@test.org"]
-if emails.hasValidEmails {
-    print("Processing valid emails...")
-    processEmails(emails.validEmails)
-}
+Validation trims whitespace, then enforces RFC 5321/5322 constraints:
+
+- **Length** — between 6 and 254 characters overall; local part ≤ 64; domain ≤ 253.
+- **Structure** — exactly one `@`, not in the first position, with non-empty local and domain parts.
+- **Local part** — ASCII only, valid `atext` characters plus periods, no leading/trailing or consecutive dots.
+- **Domain** — at least two labels, no consecutive dots, each subdomain ≤ 63 characters and alphanumeric/hyphen, and a TLD of ASCII letters at least 2 characters long.
+
+## Testing
+
+```bash
+swift test
 ```
 
-### Collection Extensions
-
-#### `validEmailCount: Int`
-Counts valid email addresses in the collection.
-
-```swift
-["valid@example.com", "invalid", "another@test.org"].validEmailCount // 2
-```
-
-## Supported Email Providers
-
-EmailValidator recognizes these major providers:
-
-### Google
-- Gmail (gmail.com, googlemail.com)
-
-### Microsoft
-- Outlook (outlook.com + regional variants, hotmail.com + regional variants, live.com + regional variants, msn.com)
-
-### Yahoo
-- Yahoo (yahoo.com, yahoo.co.uk, yahoo.ca, yahoo.de, yahoo.fr, yahoo.com.au, and more)
-
-### Apple
-- iCloud (icloud.com, me.com, mac.com)
-
-### Privacy-Focused
-- ProtonMail (protonmail.com, proton.me)
-- Tutanota (tutanota.com, tutanota.de)
-- Hey (hey.com)
-
-### Other Major Providers
-- AOL (aol.com + regional variants)
-- Yandex (yandex.com, yandex.ru)
-- Mail.Ru (mail.ru)
-
-### European Providers
-- GMX (gmx.de, gmx.com, gmx.net)
-- Web.de (web.de)
-- Orange (orange.fr, wanadoo.fr)
-- Free (free.fr)
-- La Poste (laposte.net)
-
-### Asian Providers
-- NetEase (163.com, 126.com)
-- QQ Mail (qq.com)
-- Naver (naver.com)
-- Daum (daum.net)
-
-### Business-Oriented
-- Zoho (zoho.com, zoho.eu)
-
-## Examples
-
-### Form Validation
-
-```swift
-func validateEmailField(_ email: String) -> String? {
-    guard email.isEmail else {
-        return "Please enter a valid email address"
-    }
-    return nil
-}
-```
-
-### User Registration
-
-```swift
-func processSignup(email: String) {
-    guard let normalizedEmail = email.normalizedEmail else {
-        showError("Invalid email address")
-        return
-    }
-    
-    if normalizedEmail.isPersonalEmailProvider {
-        // Personal email - different onboarding flow
-        showPersonalOnboarding()
-    } else {
-        // Business email - enterprise features
-        showBusinessOnboarding()
-    }
-    
-    // Store normalized email
-    user.email = normalizedEmail
-}
-```
-
-### Bulk Email Processing
-
-```swift
-func processEmailList(_ emails: [String]) {
-    let validEmails = emails.validEmails
-    let normalizedEmails = emails.normalizedEmails
-    
-    print("Found \(emails.validEmailCount) valid emails out of \(emails.count)")
-    
-    // Process each email
-    for email in validEmails {
-        if let provider = email.emailProvider {
-            print("Email from \(provider): \(email)")
-        }
-    }
-}
-```
-
-### Email Analytics
-
-```swift
-func analyzeEmailSignups(_ emails: [String]) {
-    let validEmails = emails.validEmails
-    let personalCount = validEmails.filter(\.isPersonalEmailProvider).count
-    let businessCount = validEmails.count - personalCount
-    
-    print("Personal emails: \(personalCount)")
-    print("Business emails: \(businessCount)")
-    
-    // Group by provider
-    let grouped = Dictionary(grouping: validEmails) { $0.emailProvider ?? "Other" }
-    for (provider, emails) in grouped {
-        print("\(provider): \(emails.count) emails")
-    }
-}
-```
-
-### Optional Handling
-
-```swift
-func processEmails(_ emails: [String]) {
-    // Use optional variants for cleaner code
-    if let validEmails = emails.validEmailsIfAny {
-        print("Processing \(validEmails.count) valid emails")
-        
-        if let normalized = emails.normalizedEmailsIfAny {
-            // Work with normalized emails
-            sendBulkEmail(to: normalized)
-        }
-    } else {
-        print("No valid emails to process")
-    }
-    
-    // Or use boolean check
-    if emails.hasValidEmails {
-        print("Found valid emails, proceeding...")
-    }
-}
-```
-
-## Performance
-
-EmailValidator is optimized for performance:
-
-- **Individual validation**: ~0.007ms per email
-- **Bulk operations**: ~0.001ms per email in arrays
-- **Zero allocations** for failed validations
-- **Lazy evaluation** in collection operations
-
-## Validation Rules
-
-EmailValidator follows RFC 5321/5322 standards with these key rules:
-
-### Email Structure
-- Must contain exactly one @ symbol
-- Local part (before @) max 64 characters
-- Domain part (after @) max 253 characters
-- Total email max 254 characters
-- Minimum 6 characters total
-
-### Local Part Rules
-- No leading or trailing dots
-- No consecutive dots
-- ASCII characters only
-- Allows: letters, numbers, and `!#$%&'*+-/=?^_`{|}~.`
-
-### Domain Rules
-- At least two parts separated by dots
-- Each part max 63 characters
-- No leading/trailing hyphens in domain parts
-- Top-level domain must be at least 2 letters
-- ASCII letters, numbers, and hyphens only
-
-## Requirements
-
-- iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+
-- Swift 5.5+
-- Xcode 13.0+
-
-## Contributing
-
-We welcome contributions! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+The test suite covers validation edge cases, normalization, component extraction, provider detection, and the array/collection helpers.
 
 ## License
 
-EmailValidator is available under the MIT license. See LICENSE for details.
+MIT License — see LICENSE file for details.
 
-## Credits
+## Author
 
-Validation logic inspired by WordPress's `is_email()` function, adapted for Swift with modern APIs and comprehensive provider detection.
+Created by David Sherlock ([ArrayPress](https://github.com/arraypress)) in 2026.
