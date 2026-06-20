@@ -6,6 +6,7 @@ A lightweight Swift library for validating, normalizing, and inspecting email ad
 
 - 🎯 **RFC-aware validation** — Enforces length limits, local/domain rules, subdomain checks, and TLD constraints for accurate results.
 - ✅ **Simple boolean checks** — `"user@example.com".isEmail` returns a plain `Bool` with no setup required.
+- 🌍 **Internationalized addresses** — Opt in with `isInternationalizedEmail` to accept Unicode (EAI / IDN) local parts and domains, while the default stays ASCII-only.
 - 🔤 **Email normalization** — Lowercases the domain while preserving the local part's original case per RFC standards.
 - ✂️ **Component extraction** — Pull out the local part and domain from any valid address.
 - 🏷️ **Provider detection** — Identify 90+ consumer providers (Gmail, Outlook, Yahoo, iCloud, ProtonMail, and more) from the domain.
@@ -45,6 +46,22 @@ if "user@example.com".isEmail {
 "invalid".isEmail        // false
 "a@b.co".isEmail         // true
 ```
+
+### Validating internationalized (EAI / IDN) emails
+
+By default validation is ASCII-only (WordPress parity). To accept internationalized addresses — Unicode local parts per RFC 6531 (SMTPUTF8) and internationalized domain names per RFC 5890 — use `isInternationalizedEmail`:
+
+```swift
+import EmailValidator
+
+"test@münchen.de".isInternationalizedEmail    // true
+"tëst@example.com".isInternationalizedEmail   // true
+"почта@почта.рф".isInternationalizedEmail     // true
+
+"test@münchen.de".isEmail                     // false (default is ASCII-only)
+```
+
+Control characters, whitespace, and structural characters (`<`, `>`, `(`, `)`, …) are still rejected. This is validation-only: addresses are checked as the Unicode U-labels you type, without Punycode/A-label conversion, so length limits are enforced in characters rather than encoded octets.
 
 ### Normalizing and extracting components
 
@@ -101,6 +118,8 @@ Validation trims whitespace, then enforces RFC 5321/5322 constraints:
 - **Structure** — exactly one `@`, not in the first position, with non-empty local and domain parts.
 - **Local part** — ASCII only, valid `atext` characters plus periods, no leading/trailing or consecutive dots.
 - **Domain** — at least two labels, no consecutive dots, each subdomain ≤ 63 characters and alphanumeric/hyphen, and a TLD of ASCII letters at least 2 characters long.
+
+When using `isInternationalizedEmail`, the same structural rules apply but Unicode letters and numbers are additionally permitted in the local part and domain labels (and Unicode-letter TLDs such as `.рф` are accepted).
 
 ## Testing
 

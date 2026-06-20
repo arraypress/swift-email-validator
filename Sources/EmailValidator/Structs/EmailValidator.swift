@@ -22,60 +22,73 @@ internal struct EmailValidator {
     ///
     /// This method implements the same validation logic as WordPress's is_email()
     /// function but adapted for Swift with proper Unicode handling.
-    static func isValid(_ email: String) -> Bool {
+    ///
+    /// - Parameters:
+    ///   - email: The address to validate.
+    ///   - internationalized: When `true`, permits Unicode (EAI/IDN) characters in
+    ///     the local and domain parts. This is *validation-only*: it accepts Unicode
+    ///     U-labels as typed and does not perform Punycode/A-label conversion, so
+    ///     length limits are enforced in characters rather than encoded octets.
+    ///     Defaults to `false` for ASCII-only WordPress parity.
+    static func isValid(_ email: String, internationalized: Bool = false) -> Bool {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         // Test for minimum length the email can be
         guard trimmed.count >= minEmailLength else { return false }
-        
+
         // Test for maximum length (RFC 5321)
         guard trimmed.count <= maxEmailLength else { return false }
-        
+
         // Test for an @ character after the first position
         guard let atIndex = trimmed.firstIndex(of: "@"),
               atIndex > trimmed.startIndex else { return false }
-        
+
         // Ensure there's only one @ symbol
         guard trimmed.lastIndex(of: "@") == atIndex else { return false }
-        
+
         // Split out the local and domain parts
         let local = String(trimmed[..<atIndex])
         let domain = String(trimmed[trimmed.index(after: atIndex)...])
-        
+
         // Validate both parts
-        return isValidLocal(local) && isValidDomain(domain)
+        return isValidLocal(local, internationalized: internationalized)
+            && isValidDomain(domain, internationalized: internationalized)
     }
-    
+
     /// Validate the local part (before @) of an email address.
-    private static func isValidLocal(_ local: String) -> Bool {
+    private static func isValidLocal(_ local: String, internationalized: Bool) -> Bool {
         // Test for empty local part
         guard !local.isEmpty else { return false }
-        
+
         // Test for length limits (RFC 5321) - this must be checked on the string length
         guard local.count <= maxLocalLength else { return false }
-        
+
         // Test for leading/trailing periods
         guard !local.hasPrefix("."), !local.hasSuffix(".") else { return false }
-        
+
         // Test for consecutive periods
         guard !local.contains("..") else { return false }
-        
-        // Test for valid characters - only ASCII characters allowed
+
+        // Test for valid characters
         // RFC 5322: atext characters plus period for local part
         for char in local {
-            // Ensure character is ASCII
-            guard char.isASCII else { return false }
-            
-            // Check if character is in allowed set
-            let isValidChar = char.isLetter || char.isNumber || "!#$%&'*+-/=?^_`{|}~.".contains(char)
-            guard isValidChar else { return false }
+            if char.isASCII {
+                // Check if character is in allowed ASCII set
+                let isValidChar = char.isLetter || char.isNumber || "!#$%&'*+-/=?^_`{|}~.".contains(char)
+                guard isValidChar else { return false }
+            } else {
+                // Non-ASCII is only permitted in internationalized (EAI) mode, and
+                // only Unicode letters/numbers - control characters, whitespace,
+                // symbols, and punctuation are still rejected.
+                guard internationalized, char.isLetter || char.isNumber else { return false }
+            }
         }
-        
+
         return true
     }
-    
+
     /// Validate the domain part (after @) of an email address.
-    private static func isValidDomain(_ domain: String) -> Bool {
+    private static func isValidDomain(_ domain: String, internationalized: Bool) -> Bool {
         // Test for empty domain
         guard !domain.isEmpty else { return false }
         
@@ -101,14 +114,14 @@ internal struct EmailValidator {
         // Loop through each sub
         for (index, sub) in subs.enumerated() {
             let isTopLevel = index == subs.count - 1
-            guard isValidSubdomain(String(sub), isTopLevel: isTopLevel) else { return false }
+            guard isValidSubdomain(String(sub), isTopLevel: isTopLevel, internationalized: internationalized) else { return false }
         }
-        
+
         return true
     }
-    
+
     /// Validate a single subdomain.
-    private static func isValidSubdomain(_ subdomain: String, isTopLevel: Bool) -> Bool {
+    private static func isValidSubdomain(_ subdomain: String, isTopLevel: Bool, internationalized: Bool) -> Bool {
         // Test for empty subdomain
         guard !subdomain.isEmpty else { return false }
         
@@ -122,13 +135,20 @@ internal struct EmailValidator {
         if isTopLevel {
             // Top-level domain specific validation
             guard subdomain.count >= minTopLevelDomainLength else { return false }
-            
-            // TLD should only contain ASCII letters
-            return subdomain.allSatisfy { $0.isLetter && $0.isASCII }
+
+            // TLD should only contain letters. In internationalized mode, Unicode
+            // letters (e.g. IDN TLDs such as рф or 中国) are permitted; otherwise
+            // ASCII letters only.
+            return subdomain.allSatisfy { internationalized ? $0.isLetter : ($0.isLetter && $0.isASCII) }
         } else {
-            // Regular subdomain validation: ASCII alphanumeric and hyphens only
+            // Regular subdomain validation: alphanumeric and hyphens.
+            // In internationalized mode, Unicode letters/numbers are also permitted.
             return subdomain.allSatisfy { char in
-                char.isASCII && (char.isLetter || char.isNumber || char == "-")
+                if char.isASCII {
+                    return char.isLetter || char.isNumber || char == "-"
+                } else {
+                    return internationalized && (char.isLetter || char.isNumber)
+                }
             }
         }
     }

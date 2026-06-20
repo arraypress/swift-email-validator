@@ -374,12 +374,67 @@ final class EmailValidatorTests: XCTestCase {
         ]
         
         for email in unicodeEmails {
-            // Current implementation requires ASCII - this documents current behavior
-            // In future, could be enhanced for internationalized domain names
-            XCTAssertFalse(email.isEmail, "Unicode email '\(email)' currently not supported")
+            // The default validator is ASCII-only (WordPress parity). Unicode
+            // addresses require opt-in via isInternationalizedEmail.
+            XCTAssertFalse(email.isEmail, "Unicode email '\(email)' should be rejected by default")
         }
     }
-    
+
+    // MARK: - Internationalized (EAI / IDN) Tests
+
+    func testInternationalizedEmailsAccepted() {
+        // Addresses that should pass in internationalized mode (validation-only).
+        let valid = [
+            "test@münchen.de",       // Unicode in domain label, ASCII TLD
+            "tëst@example.com",      // Unicode in local part
+            "tést@éxample.com",      // Unicode in both
+            "用户@example.com",       // CJK local part
+            "δοκιμή@παράδειγμα.gr",  // Greek local + domain
+            "почта@почта.рф",        // Cyrillic local + IDN TLD
+            "user@münchen.example.com" // Unicode in a non-TLD subdomain
+        ]
+
+        for email in valid {
+            XCTAssertTrue(email.isInternationalizedEmail,
+                          "Internationalized email '\(email)' should be valid")
+        }
+    }
+
+    func testInternationalizedEmailsRejectInvalid() {
+        // These must be rejected even in internationalized mode: structural
+        // characters, whitespace, and control characters are never allowed.
+        let invalid: [String] = [
+            "tëst <user>@example.com",   // angle brackets + space in local
+            "us\u{00A0}er@münchen.de",   // non-breaking space in local
+            "user@exämple .com",         // space inside domain
+            "tëst@example..com",         // consecutive dots in domain
+            ".tëst@example.com",         // leading dot in local
+            "tëst.@example.com",         // trailing dot in local
+            "user@münchen",              // no TLD / single label
+            "用户@example.c",             // TLD too short
+            "us(er)@münchen.de",         // parentheses in local
+            "tëst@-münchen.de"           // leading hyphen in domain label
+        ]
+
+        for email in invalid {
+            XCTAssertFalse(email.isInternationalizedEmail,
+                           "Email '\(email)' should be invalid even when internationalized")
+        }
+    }
+
+    func testInternationalizedModesAreDistinct() {
+        // The ASCII-only property still rejects Unicode addresses that the
+        // internationalized property accepts.
+        XCTAssertFalse("test@münchen.de".isEmail)
+        XCTAssertTrue("test@münchen.de".isInternationalizedEmail)
+        XCTAssertFalse("tëst@example.com".isEmail)
+        XCTAssertTrue("tëst@example.com".isInternationalizedEmail)
+
+        // Plain ASCII addresses remain valid in both modes.
+        XCTAssertTrue("user@example.com".isEmail)
+        XCTAssertTrue("user@example.com".isInternationalizedEmail)
+    }
+
     func testCaseSensitivityInValidation() {
         let emailVariations = [
             "Test@Example.Com",

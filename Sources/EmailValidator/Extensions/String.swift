@@ -26,7 +26,29 @@ public extension String {
     var isEmail: Bool {
         return EmailValidator.isValid(self)
     }
-    
+
+    /// Check if this string is a valid internationalized (EAI / IDN) email address.
+    ///
+    /// Unlike ``isEmail``, this permits Unicode characters in both the local part
+    /// (per RFC 6531 / SMTPUTF8) and the domain labels (per RFC 5890 internationalized
+    /// domain names) — while control characters, whitespace, and structural characters
+    /// such as `<`, `>`, `(`, `)` are still rejected. Plain ASCII addresses that pass
+    /// ``isEmail`` also pass here.
+    ///
+    /// This is *validation-only*: addresses are validated as the Unicode U-labels you
+    /// type them, without Punycode/A-label conversion. Consequently length limits are
+    /// enforced in Unicode characters rather than encoded octets.
+    ///
+    /// ## Example
+    /// ```swift
+    /// "test@münchen.de".isInternationalizedEmail    // true
+    /// "tëst@example.com".isInternationalizedEmail   // true
+    /// "test@münchen.de".isEmail                     // false (ASCII-only)
+    /// ```
+    var isInternationalizedEmail: Bool {
+        return EmailValidator.isValid(self, internationalized: true)
+    }
+
     /// Get the normalized (lowercase domain) version of this email if valid.
     ///
     /// Returns nil if the email is invalid. The local part (before @) preserves
